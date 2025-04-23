@@ -1,24 +1,34 @@
-local player = game.Players.LocalPlayer
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-screenGui.Name = "CustomGUI"
- 
+-- Define ScreenGui
+local player = game:GetService("Players").LocalPlayer
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MyDraggableGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main container that will be draggable
+local holderFrame = Instance.new("Frame", screenGui)
+holderFrame.Size = UDim2.new(0, 800, 0, 600)
+holderFrame.Position = UDim2.new(0, 200, 0, 100)
+holderFrame.BackgroundTransparency = 1
+holderFrame.Active = true
+
 -- Create background
-local background = Instance.new("Frame", screenGui)
+local background = Instance.new("Frame", holderFrame)
 background.Size = UDim2.new(0, 450, 0, 300)
-background.Position = UDim2.new(0, 276, 0, 164)
+background.Position = UDim2.new(0, 76, 0, 64)
 background.BackgroundColor3 = Color3.fromHex("#23232c")
 background.BorderSizePixel = 1
 background.BorderColor3 = Color3.fromHex("#343638")
- 
+
 local bgCorner = Instance.new("UICorner", background)
 bgCorner.CornerRadius = UDim.new(0, 8)
- 
+
 -- Create textbox frame
-local textboxFrame = Instance.new("Frame", screenGui)
+local textboxFrame = Instance.new("Frame", holderFrame)
 textboxFrame.Size = UDim2.new(0, 300, 0, 50)
-textboxFrame.Position = UDim2.new(0, 350, 0, 345)
+textboxFrame.Position = UDim2.new(0, 150, 0, 245)
 textboxFrame.BackgroundColor3 = Color3.fromHex("#23232c")
- 
+
 -- Create textbox
 local textbox = Instance.new("TextBox", textboxFrame)
 textbox.Size = UDim2.new(1, -4, 1, -4)
@@ -31,54 +41,85 @@ textbox.TextWrapped = true
 textbox.Text = "Enter text here..."
 textbox.BorderSizePixel = 10
 textbox.BorderColor3 = Color3.fromRGB(0, 170, 0)
- 
+
 local textboxCorner = Instance.new("UICorner", textbox)
 textboxCorner.CornerRadius = UDim.new(0, 8)
- 
+
 -- Create title label
-local titleLabel = Instance.new("TextLabel", screenGui)
+local titleLabel = Instance.new("TextLabel", holderFrame)
 titleLabel.Size = UDim2.new(0, 100, 0, 32)
-titleLabel.Position = UDim2.new(0, 450, 0, 190)
+titleLabel.Position = UDim2.new(0, 250, 0, 90)
 titleLabel.Text = "ARATARE"
 titleLabel.TextColor3 = Color3.fromHex("#ffffff")
 titleLabel.BackgroundColor3 = Color3.fromHex("#23232c")
 titleLabel.Font = Enum.Font.Fantasy
 titleLabel.TextSize = 30
 titleLabel.BorderSizePixel = 0
- 
+
 -- Create key system label
-local keysystemLabel = Instance.new("TextLabel", screenGui)
+local keysystemLabel = Instance.new("TextLabel", holderFrame)
 keysystemLabel.Size = UDim2.new(0, 100, 0, 32)
-keysystemLabel.Position = UDim2.new(0, 450, 0, 225)
+keysystemLabel.Position = UDim2.new(0, 250, 0, 125)
 keysystemLabel.Text = "Keysystem"
 keysystemLabel.TextColor3 = Color3.fromHex("#ffffff")
 keysystemLabel.BackgroundColor3 = Color3.fromHex("#23232c")
 keysystemLabel.Font = Enum.Font.ArialBold
 keysystemLabel.TextSize = 18
 keysystemLabel.BorderSizePixel = 0
- 
+
 -- Create prompt label
-local promptLabel = Instance.new("TextLabel", screenGui)
+local promptLabel = Instance.new("TextLabel", holderFrame)
 promptLabel.Size = UDim2.new(0, 100, 0, 32)
-promptLabel.Position = UDim2.new(0, 359, 0, 301)
+promptLabel.Position = UDim2.new(0, 159, 0, 201)
 promptLabel.Text = "Enter your key:"
 promptLabel.TextColor3 = Color3.fromHex("#ffffff")
 promptLabel.BackgroundColor3 = Color3.fromHex("#23232c")
 promptLabel.Font = Enum.Font.ArialBold
 promptLabel.TextSize = 16
 promptLabel.BorderSizePixel = 0
- 
+
 -- Create checkmark button
-local checkmarkButton = Instance.new("TextButton", screenGui)
+local checkmarkButton = Instance.new("TextButton", holderFrame)
 checkmarkButton.Size = UDim2.new(0, 100, 0, 32)
-checkmarkButton.Position = UDim2.new(0, 540, 0, 410) 
+checkmarkButton.Position = UDim2.new(0, 340, 0, 310)
 checkmarkButton.Text = " ✔ "
 checkmarkButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-checkmarkButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0) -- Green color
+checkmarkButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 checkmarkButton.Font = Enum.Font.SourceSansBold
 checkmarkButton.TextSize = 16
 checkmarkButton.BorderSizePixel = 0
- 
+
+-- Drag functionality for the holder frame
+local function makeDraggable(frame)
+	local dragging = false
+	local dragStart = nil
+	local startPos = nil
+
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	frame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+									   startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
+makeDraggable(holderFrame)
+
 -- Initialize the table for valid keys
 local validKeys = {}
  
