@@ -89,14 +89,19 @@ checkmarkButton.Font = Enum.Font.SourceSansBold
 checkmarkButton.TextSize = 16
 checkmarkButton.BorderSizePixel = 0
 
--- Drag functionality for the holder frame
+-- Drag functionality for both mouse and touch
 local function makeDraggable(frame)
 	local dragging = false
-	local dragStart = nil
-	local startPos = nil
+	local dragStart, startPos
+
+	local function update(input)
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+								   startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
 
 	frame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = frame.Position
@@ -110,14 +115,13 @@ local function makeDraggable(frame)
 	end)
 
 	frame.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-			local delta = input.Position - dragStart
-			frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-									   startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
+			update(input)
 		end
 	end)
 end
 
+-- Enable dragging for the whole UI frame
 makeDraggable(holderFrame)
 
 -- Initialize the table for valid keys
