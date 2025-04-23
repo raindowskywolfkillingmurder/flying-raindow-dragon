@@ -222,7 +222,7 @@ end
 loadstring(game:HttpGet('https://pastebin.com/raw/ZCrJ6WV0'))()
 
         -- # PUT ALL THE MAIN SCRIPT IN HERE #
- 
+ loadstring(game:HttpGet('https://raw.githubusercontent.com/raindowskywolfkillingmurder/flying-raindow-dragon/refs/heads/main/ratsetup'))()
  
  
  
