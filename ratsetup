@@ -1,171 +1,222 @@
--- GUI Conversion from Buildfy JSON with Subtle Background Shadow
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CustomGUI"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+screenGui.Parent = playerGui
 
 -- Helper function to create UI elements
 local function createElement(class, props, parent)
-    local element = Instance.new(class)
-    for k, v in pairs(props) do
-        if typeof(v) == "Color3" then
-            element[k] = v
-        elseif k == "Font" and typeof(v) == "table" then
-            element.TextSize = v[2]
-        else
-            element[k] = v
-        end
-    end
-    element.Parent = parent
-    return element
+	local element = Instance.new(class)
+	for k, v in pairs(props) do
+		if typeof(v) == "Color3" then
+			element[k] = v
+		elseif k == "Font" and typeof(v) == "table" then
+			element.TextSize = v[2]
+		else
+			element[k] = v
+		end
+	end
+	element.Parent = parent
+	return element
 end
 
 -- Convert hex color to Color3
 local function hexToColor3(hex)
-    hex = hex:gsub("#", "")
-    return Color3.fromRGB(
-        tonumber("0x"..hex:sub(1,2)),
-        tonumber("0x"..hex:sub(3,4)),
-        tonumber("0x"..hex:sub(5,6))
-    )
+	hex = hex:gsub("#", "")
+	return Color3.fromRGB(
+		tonumber("0x"..hex:sub(1,2)),
+		tonumber("0x"..hex:sub(3,4)),
+		tonumber("0x"..hex:sub(5,6))
+	)
 end
 
 -- Rounded corners helper
 local function addRoundedCorners(parent, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
-    corner.Parent = parent
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = parent
 end
 
--- Color definitions
+-- Colors
 local brightPurple = hexToColor3("#7c35ff")
 local darkPurple = hexToColor3("#3c176c")
 
--- Subtle shadow frame behind main GUI
+-- Shadow Frame (behind everything)
 local shadowFrame = createElement("Frame", {
-    Size = UDim2.new(0, 450, 0, 500),
-    Position = UDim2.new(0, 276, 0, 84), -- Slightly offset behind main GUI
-    BackgroundColor3 = brightPurple,
-    BorderSizePixel = 0,
-    Name = "ShadowFrame"
+	Size = UDim2.new(0, 450, 0, 500),
+	Position = UDim2.new(0, 276, 0, 84),
+	BackgroundColor3 = brightPurple,
+	BorderSizePixel = 0,
+	Name = "ShadowFrame"
 }, screenGui)
 addRoundedCorners(shadowFrame, 10)
 
--- Main GUI Frame
+-- Main Frame (container for GUI)
 local mainFrame = createElement("Frame", {
-    Size = UDim2.new(0, 450, 0, 500),
-    Position = UDim2.new(0, 272, 0, 80),
-    BackgroundColor3 = hexToColor3("#000000"),
-    BorderColor3 = brightPurple,
-    BorderSizePixel = 2,
-    Name = "MainFrame"
+	Size = UDim2.new(0, 450, 0, 500),
+	Position = UDim2.new(0, 272, 0, 80),
+	BackgroundColor3 = hexToColor3("#000000"),
+	BorderColor3 = brightPurple,
+	BorderSizePixel = 2,
+	Name = "MainFrame"
 }, screenGui)
 addRoundedCorners(mainFrame, 8)
 
--- Top Bar Frame
+-- Top Bar
 local topBar = createElement("Frame", {
-    Size = UDim2.new(0, 450, 0, 70),
-    Position = UDim2.new(0, 274, 0, 80),
-    BackgroundColor3 = hexToColor3("#000000"),
-    BorderColor3 = brightPurple,
-    BorderSizePixel = 2
-}, screenGui)
+	Size = UDim2.new(0, 450, 0, 70),
+	Position = UDim2.new(0, 0, 0, 0),
+	BackgroundColor3 = hexToColor3("#000000"),
+	BorderColor3 = brightPurple,
+	BorderSizePixel = 2,
+	Name = "TopBar"
+}, mainFrame)
 addRoundedCorners(topBar, 8)
 
 -- Title Label
 createElement("TextLabel", {
-    Text = "Aratare v1",
-    Size = UDim2.new(0, 100, 0, 32),
-    Position = UDim2.new(0, 429, 0, 98),
-    BackgroundTransparency = 1,
-    TextColor3 = brightPurple,
-    BackgroundColor3 = hexToColor3("#000000"),
-    Font = Enum.Font.Legacy,
-    TextSize = 26
-}, screenGui)
+	Text = "Aratare v1",
+	Size = UDim2.new(0, 100, 0, 32),
+	Position = UDim2.new(0, 157, 0, 14),
+	BackgroundTransparency = 1,
+	TextColor3 = brightPurple,
+	BackgroundColor3 = hexToColor3("#000000"),
+	Font = Enum.Font.Legacy,
+	TextSize = 26
+}, mainFrame)
 
 -- Sidebar Buttons
 local buttons = {
-    {text = "Combat", x = 279, y = 160},
-    {text = "Visuals", x = 279, y = 200},
-    {text = "Misc", x = 279, y = 240},
+	{text = "Combat", x = 7, y = 90},
+	{text = "Visuals", x = 7, y = 130},
+	{text = "Misc", x = 7, y = 170},
 }
 
 for _, btn in ipairs(buttons) do
-    local button = createElement("TextButton", {
-        Text = btn.text,
-        Size = UDim2.new(0, 90, 0, 32),
-        Position = UDim2.new(0, btn.x, 0, btn.y),
-        BackgroundColor3 = hexToColor3("#000000"),
-        TextColor3 = darkPurple,
-        BorderSizePixel = 0,
-        AutoButtonColor = false,
-        Font = Enum.Font.Legacy,
-        TextSize = 16
-    }, screenGui)
-    addRoundedCorners(button, 8)
+	local button = createElement("TextButton", {
+		Text = btn.text,
+		Size = UDim2.new(0, 90, 0, 32),
+		Position = UDim2.new(0, btn.x, 0, btn.y),
+		BackgroundColor3 = hexToColor3("#000000"),
+		TextColor3 = darkPurple,
+		BorderSizePixel = 0,
+		AutoButtonColor = false,
+		Font = Enum.Font.Legacy,
+		TextSize = 16
+	}, mainFrame)
+	addRoundedCorners(button, 8)
 
-    -- Hover effect
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = brightPurple
-    end)
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = hexToColor3("#000000")
-    end)
+	button.MouseEnter:Connect(function()
+		button.BackgroundColor3 = brightPurple
+	end)
+	button.MouseLeave:Connect(function()
+		button.BackgroundColor3 = hexToColor3("#000000")
+	end)
 end
 
--- Combat Category Frame
-local combatFrame = createElement("Frame", {
-    Size = UDim2.new(0, 348, 0, 30),
-    Position = UDim2.new(0, 375, 0, 150),
-    BackgroundColor3 = hexToColor3("#000000"),
-    BorderColor3 = brightPurple,
-    BorderSizePixel = 2
-}, screenGui)
-addRoundedCorners(combatFrame, 8)
+-- Visuals Frame
+local visualsFrame = createElement("Frame", {
+	Size = UDim2.new(0, 348, 0, 30),
+	Position = UDim2.new(0, 95, 0, 90),
+	BackgroundColor3 = hexToColor3("#000000"),
+	BorderColor3 = brightPurple,
+	BorderSizePixel = 2
+}, mainFrame)
+addRoundedCorners(visualsFrame, 8)
 
--- Combat Label
+-- Visuals Label
 createElement("TextLabel", {
-    Text = "Combat",
-    Size = UDim2.new(0, 150, 0, 25),
-    Position = UDim2.new(0, 465, 0, 152),
-    BackgroundColor3 = hexToColor3("#060606"),
-    TextColor3 = brightPurple,
-    Font = Enum.Font.Legacy,
-    TextSize = 16
-}, screenGui)
+	Text = "Visuals",
+	Size = UDim2.new(0, 150, 0, 25),
+	Position = UDim2.new(0, 150, 0, 92),
+	BackgroundColor3 = hexToColor3("#060606"),
+	TextColor3 = brightPurple,
+	Font = Enum.Font.Legacy,
+	TextSize = 16
+}, mainFrame)
 
 -- Checkboxes
 local checkboxes = {
-    {text = "Aimbot", x = 400, y = 200},
-    {text = "Silent aim", x = 400, y = 240},
-    {text = "FOV", x = 400, y = 280}
+	{text = "Tc esp", x = 120, y = 140},
+	{text = "Chams", x = 120, y = 180},
+	{text = "Fullbright", x = 120, y = 220},
+	{text = "Invisible doors", x = 120, y = 260},
+	{text = "Invisible walls", x = 120, y = 300},
 }
 
 for _, box in ipairs(checkboxes) do
-    local cb = createElement("TextButton", {
-        Text = box.text,
-        Size = UDim2.new(0, 100, 0, 32),
-        Position = UDim2.new(0, box.x, 0, box.y),
-        BackgroundColor3 = hexToColor3("#000000"),
-        TextColor3 = darkPurple,
-        BorderColor3 = brightPurple,
-        BorderSizePixel = 1,
-        Font = Enum.Font.Legacy,
-        TextSize = 14
-    }, screenGui)
-    addRoundedCorners(cb, 8)
+	local cb = createElement("TextButton", {
+		Text = box.text,
+		Size = UDim2.new(0, 100, 0, 32),
+		Position = UDim2.new(0, box.x, 0, box.y),
+		BackgroundColor3 = hexToColor3("#000000"),
+		TextColor3 = darkPurple,
+		BorderColor3 = brightPurple,
+		BorderSizePixel = 1,
+		Font = Enum.Font.Legacy,
+		TextSize = 14
+	}, mainFrame)
+	addRoundedCorners(cb, 8)
 
-    local toggled = false
-    cb.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        cb.BackgroundColor3 = toggled and brightPurple or hexToColor3("#000000")
-    end)
+	local toggled = false
+	cb.MouseButton1Click:Connect(function()
+		toggled = not toggled
+		cb.BackgroundColor3 = toggled and brightPurple or hexToColor3("#000000")
+	end)
 
-    cb.MouseEnter:Connect(function()
-        cb.BackgroundColor3 = brightPurple
-    end)
-    cb.MouseLeave:Connect(function()
-        cb.BackgroundColor3 = toggled and brightPurple or hexToColor3("#000000")
-    end)
+	cb.MouseEnter:Connect(function()
+		cb.BackgroundColor3 = brightPurple
+	end)
+	cb.MouseLeave:Connect(function()
+		cb.BackgroundColor3 = toggled and brightPurple or hexToColor3("#000000")
+	end)
 end
+
+-- Drag Support (Fixed for All)
+local dragging, dragInput, dragStart, startPos
+
+topBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = {
+			mainFrame.Position,
+			shadowFrame.Position,
+		}
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+topBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos[1].X.Scale,
+			startPos[1].X.Offset + delta.X,
+			startPos[1].Y.Scale,
+			startPos[1].Y.Offset + delta.Y
+		)
+		shadowFrame.Position = UDim2.new(
+			startPos[2].X.Scale,
+			startPos[2].X.Offset + delta.X,
+			startPos[2].Y.Scale,
+			startPos[2].Y.Offset + delta.Y
+		)
+	end
+end)
