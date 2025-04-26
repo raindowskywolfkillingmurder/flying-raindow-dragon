@@ -1,222 +1,281 @@
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
+-- Main Setup
+local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CustomGUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Helper function to create UI elements
-local function createElement(class, props, parent)
-	local element = Instance.new(class)
-	for k, v in pairs(props) do
-		if typeof(v) == "Color3" then
-			element[k] = v
-		elseif k == "Font" and typeof(v) == "table" then
-			element.TextSize = v[2]
-		else
-			element[k] = v
-		end
-	end
-	element.Parent = parent
-	return element
-end
-
--- Convert hex color to Color3
+-- Helpers
 local function hexToColor3(hex)
-	hex = hex:gsub("#", "")
-	return Color3.fromRGB(
-		tonumber("0x"..hex:sub(1,2)),
-		tonumber("0x"..hex:sub(3,4)),
-		tonumber("0x"..hex:sub(5,6))
-	)
+    hex = hex:gsub("#", "")
+    return Color3.fromRGB(
+        tonumber("0x" .. hex:sub(1,2)),
+        tonumber("0x" .. hex:sub(3,4)),
+        tonumber("0x" .. hex:sub(5,6))
+    )
 end
 
--- Rounded corners helper
+local function createElement(class, props, parent)
+    local element = Instance.new(class)
+    for k, v in pairs(props) do
+        if typeof(v) == "Color3" then
+            element[k] = v
+        else
+            element[k] = v
+        end
+    end
+    element.Parent = parent
+    return element
+end
+
 local function addRoundedCorners(parent, radius)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = parent
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius)
+    corner.Parent = parent
 end
 
 -- Colors
 local brightPurple = hexToColor3("#7c35ff")
 local darkPurple = hexToColor3("#3c176c")
 
--- Shadow Frame (behind everything)
+-- GUI Parts
 local shadowFrame = createElement("Frame", {
-	Size = UDim2.new(0, 450, 0, 500),
-	Position = UDim2.new(0, 276, 0, 84),
-	BackgroundColor3 = brightPurple,
-	BorderSizePixel = 0,
-	Name = "ShadowFrame"
+    Size = UDim2.new(0, 450, 0, 500),
+    Position = UDim2.new(0, 276, 0, 84),
+    BackgroundColor3 = brightPurple,
+    BorderSizePixel = 0,
+    Name = "ShadowFrame"
 }, screenGui)
 addRoundedCorners(shadowFrame, 10)
 
--- Main Frame (container for GUI)
 local mainFrame = createElement("Frame", {
-	Size = UDim2.new(0, 450, 0, 500),
-	Position = UDim2.new(0, 272, 0, 80),
-	BackgroundColor3 = hexToColor3("#000000"),
-	BorderColor3 = brightPurple,
-	BorderSizePixel = 2,
-	Name = "MainFrame"
+    Size = UDim2.new(0, 450, 0, 500),
+    Position = UDim2.new(0, 272, 0, 80),
+    BackgroundColor3 = Color3.new(0, 0, 0),
+    BorderColor3 = brightPurple,
+    BorderSizePixel = 2,
+    Name = "MainFrame"
 }, screenGui)
 addRoundedCorners(mainFrame, 8)
 
--- Top Bar
 local topBar = createElement("Frame", {
-	Size = UDim2.new(0, 450, 0, 70),
-	Position = UDim2.new(0, 0, 0, 0),
-	BackgroundColor3 = hexToColor3("#000000"),
-	BorderColor3 = brightPurple,
-	BorderSizePixel = 2,
-	Name = "TopBar"
-}, mainFrame)
+    Size = UDim2.new(0, 450, 0, 40),
+    Position = UDim2.new(0, 272, 0, 40),
+    BackgroundColor3 = Color3.new(0, 0, 0),
+    BorderColor3 = brightPurple,
+    BorderSizePixel = 2,
+    Name = "TopBar"
+}, screenGui)
 addRoundedCorners(topBar, 8)
 
--- Title Label
-createElement("TextLabel", {
-	Text = "Aratare v1",
-	Size = UDim2.new(0, 100, 0, 32),
-	Position = UDim2.new(0, 157, 0, 14),
-	BackgroundTransparency = 1,
-	TextColor3 = brightPurple,
-	BackgroundColor3 = hexToColor3("#000000"),
-	Font = Enum.Font.Legacy,
-	TextSize = 26
-}, mainFrame)
+local titleLabel = createElement("TextLabel", {
+    Text = "Aratare v1",
+    Size = UDim2.new(0, 450, 0, 40),
+    Position = UDim2.new(0, 0, 0, 0),
+    BackgroundTransparency = 1,
+    TextColor3 = brightPurple,
+    Font = Enum.Font.Legacy,
+    TextSize = 26,
+    Name = "TitleLabel"
+}, topBar)
 
--- Sidebar Buttons
+-- Sidebar buttons
 local buttons = {
-	{text = "Combat", x = 7, y = 90},
-	{text = "Visuals", x = 7, y = 130},
-	{text = "Misc", x = 7, y = 170},
+    {text = "Combat", tab = "CombatTab"},
+    {text = "Visuals", tab = "VisualsTab"},
+    {text = "Misc", tab = "MiscTab"},
 }
 
-for _, btn in ipairs(buttons) do
-	local button = createElement("TextButton", {
-		Text = btn.text,
-		Size = UDim2.new(0, 90, 0, 32),
-		Position = UDim2.new(0, btn.x, 0, btn.y),
-		BackgroundColor3 = hexToColor3("#000000"),
-		TextColor3 = darkPurple,
-		BorderSizePixel = 0,
-		AutoButtonColor = false,
-		Font = Enum.Font.Legacy,
-		TextSize = 16
-	}, mainFrame)
-	addRoundedCorners(button, 8)
+local tabs = {}
 
-	button.MouseEnter:Connect(function()
-		button.BackgroundColor3 = brightPurple
-	end)
-	button.MouseLeave:Connect(function()
-		button.BackgroundColor3 = hexToColor3("#000000")
-	end)
+for i, info in ipairs(buttons) do
+    local button = createElement("TextButton", {
+        Text = info.text,
+        Size = UDim2.new(0, 90, 0, 32),
+        Position = UDim2.new(0, 5, 0, 60 + (i-1)*40),
+        BackgroundColor3 = Color3.new(0, 0, 0),
+        TextColor3 = darkPurple,
+        BorderSizePixel = 0,
+        Font = Enum.Font.Legacy,
+        TextSize = 16,
+        AutoButtonColor = false,
+    }, mainFrame)
+    addRoundedCorners(button, 8)
+
+    local tabFrame = createElement("Frame", {
+        Size = UDim2.new(0, 340, 0, 380),
+        Position = UDim2.new(0, 100, 0, 60),
+        BackgroundColor3 = Color3.new(0, 0, 0),
+        BorderColor3 = brightPurple,
+        BorderSizePixel = 2,
+        Name = info.tab
+    }, mainFrame)
+    addRoundedCorners(tabFrame, 8)
+    tabs[info.tab] = tabFrame
+    tabFrame.Visible = (i == 1) -- Only first one shown initially
+
+    -- Label inside each tab
+    createElement("TextLabel", {
+        Text = info.text .. " Page",
+        Size = UDim2.new(0, 340, 0, 30),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = brightPurple,
+        Font = Enum.Font.Legacy,
+        TextSize = 18,
+    }, tabFrame)
+
+    -- Button switching tabs
+    button.MouseButton1Click:Connect(function()
+        for name, frame in pairs(tabs) do
+            frame.Visible = (name == info.tab)
+        end
+    end)
+
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = brightPurple
+    end)
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = Color3.new(0, 0, 0)
+    end)
 end
 
--- Visuals Frame
-local visualsFrame = createElement("Frame", {
-	Size = UDim2.new(0, 348, 0, 30),
-	Position = UDim2.new(0, 95, 0, 90),
-	BackgroundColor3 = hexToColor3("#000000"),
-	BorderColor3 = brightPurple,
-	BorderSizePixel = 2
-}, mainFrame)
-addRoundedCorners(visualsFrame, 8)
-
--- Visuals Label
-createElement("TextLabel", {
-	Text = "Visuals",
-	Size = UDim2.new(0, 150, 0, 25),
-	Position = UDim2.new(0, 150, 0, 92),
-	BackgroundColor3 = hexToColor3("#060606"),
-	TextColor3 = brightPurple,
-	Font = Enum.Font.Legacy,
-	TextSize = 16
-}, mainFrame)
-
--- Checkboxes
-local checkboxes = {
-	{text = "Tc esp", x = 120, y = 140},
-	{text = "Chams", x = 120, y = 180},
-	{text = "Fullbright", x = 120, y = 220},
-	{text = "Invisible doors", x = 120, y = 260},
-	{text = "Invisible walls", x = 120, y = 300},
-}
-
-for _, box in ipairs(checkboxes) do
-	local cb = createElement("TextButton", {
-		Text = box.text,
-		Size = UDim2.new(0, 100, 0, 32),
-		Position = UDim2.new(0, box.x, 0, box.y),
-		BackgroundColor3 = hexToColor3("#000000"),
-		TextColor3 = darkPurple,
-		BorderColor3 = brightPurple,
-		BorderSizePixel = 1,
-		Font = Enum.Font.Legacy,
-		TextSize = 14
-	}, mainFrame)
-	addRoundedCorners(cb, 8)
-
-	local toggled = false
-	cb.MouseButton1Click:Connect(function()
-		toggled = not toggled
-		cb.BackgroundColor3 = toggled and brightPurple or hexToColor3("#000000")
-	end)
-
-	cb.MouseEnter:Connect(function()
-		cb.BackgroundColor3 = brightPurple
-	end)
-	cb.MouseLeave:Connect(function()
-		cb.BackgroundColor3 = toggled and brightPurple or hexToColor3("#000000")
-	end)
-end
-
--- Drag Support (Fixed for All)
+-- Dragging
+local UserInputService = game:GetService("UserInputService")
 local dragging, dragInput, dragStart, startPos
 
-topBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = {
-			mainFrame.Position,
-			shadowFrame.Position,
-		}
+local function update(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+    topBar.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y - 40
+    )
+    shadowFrame.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X + 4,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y + 4
+    )
+end
 
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
+topBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
 end)
 
 topBar.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		local delta = input.Position - dragStart
-		mainFrame.Position = UDim2.new(
-			startPos[1].X.Scale,
-			startPos[1].X.Offset + delta.X,
-			startPos[1].Y.Scale,
-			startPos[1].Y.Offset + delta.Y
-		)
-		shadowFrame.Position = UDim2.new(
-			startPos[2].X.Scale,
-			startPos[2].X.Offset + delta.X,
-			startPos[2].Y.Scale,
-			startPos[2].Y.Offset + delta.Y
-		)
-	end
+    if input == dragInput and dragging then
+        update(input)
+    end
 end)
+
+------------------------------------------------------------------------------------
+-- ForceField Script inside Misc tab
+
+-- ForceField Toggle Button
+local enabled = true
+local forceMaterial = Enum.Material.ForceField
+local forceColor = Color3.fromRGB(120, 60, 180)
+local wallNames = {"Wall", "Part", "Barrier"}
+local originalStates = {}
+
+local toggleButton = createElement("TextButton", {
+    Text = "ForceField: ON",
+    Size = UDim2.new(0, 200, 0, 40),
+    Position = UDim2.new(0, 70, 0, 50),
+    BackgroundColor3 = forceColor,
+    TextColor3 = Color3.new(1, 1, 1),
+    Font = Enum.Font.SourceSansBold,
+    TextSize = 20,
+}, tabs["MiscTab"])
+addRoundedCorners(toggleButton, 8)
+
+-- ForceField logic
+local function rememberOriginal(part)
+    if not originalStates[part] then
+        originalStates[part] = {
+            Material = part.Material,
+            Color = part.Color
+        }
+    end
+end
+
+local function restoreOriginals()
+    for part, state in pairs(originalStates) do
+        if part and part:IsA("BasePart") then
+            part.Material = state.Material
+            part.Color = state.Color
+        end
+    end
+end
+
+local function applyStyleToPart(part)
+    if part:IsA("BasePart") then
+        rememberOriginal(part)
+        part.Material = forceMaterial
+        part.Color = forceColor
+    end
+end
+
+local function updateAllWalls()
+    for _, model in ipairs(workspace:GetChildren()) do
+        if model:IsA("Model") then
+            for _, name in ipairs(wallNames) do
+                local part = model:FindFirstChild(name)
+                if part and part:IsA("BasePart") then
+                    if enabled then
+                        applyStyleToPart(part)
+                    else
+                        restoreOriginals()
+                    end
+                end
+            end
+        end
+    end
+end
+
+workspace.ChildAdded:Connect(function(child)
+    task.wait(0.1)
+    if not enabled then return end
+    if child:IsA("Model") then
+        for _, name in ipairs(wallNames) do
+            local part = child:FindFirstChild(name)
+            if part and part:IsA("BasePart") then
+                applyStyleToPart(part)
+            end
+        end
+    end
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    if enabled then
+        toggleButton.Text = "ForceField: ON"
+        toggleButton.BackgroundColor3 = forceColor
+        updateAllWalls()
+    else
+        toggleButton.Text = "ForceField: OFF"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        restoreOriginals()
+    end
+end)
+
+updateAllWalls()
+------------------------------------------------------------------------------------
