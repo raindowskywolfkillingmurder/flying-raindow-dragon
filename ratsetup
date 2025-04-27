@@ -1,13 +1,17 @@
 -- GUI Setup
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local userInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local soundService = game:GetService("SoundService")
 
+-- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CustomGUI"
-screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
 
--- Main Frame that holds everything
+-- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 450, 0, 500)
 mainFrame.Position = UDim2.new(0, 300, 0, 100)
@@ -31,7 +35,6 @@ local topCorner = Instance.new("UICorner")
 topCorner.CornerRadius = UDim.new(0, 8)
 topCorner.Parent = topBar
 
--- Title Label
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 40)
 titleLabel.BackgroundTransparency = 1
@@ -41,7 +44,32 @@ titleLabel.Font = Enum.Font.Legacy
 titleLabel.TextSize = 26
 titleLabel.Parent = topBar
 
--- Sidebar for Tabs
+-- Dragging
+local dragging = false
+local dragInput, mousePos, framePos
+
+topBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = mainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+userInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - mousePos
+        mainFrame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Sidebar
 local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, 100, 1, 0)
 sidebar.Position = UDim2.new(0, 0, 0, 0)
@@ -65,7 +93,7 @@ local miscFrame = combatFrame:Clone()
 miscFrame.Parent = mainFrame
 miscFrame.Visible = false
 
--- Tab Buttons
+-- Tabs
 local tabs = {
     {Name = "Combat", Frame = combatFrame},
     {Name = "Visuals", Frame = visualsFrame},
@@ -92,12 +120,36 @@ for i, tabInfo in ipairs(tabs) do
     btn.MouseEnter:Connect(function()
         btn.BackgroundColor3 = Color3.fromRGB(124, 53, 255)
     end)
+
     btn.MouseLeave:Connect(function()
         btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     end)
 end
 
--- Helper to make checkboxes
+-- Lighting Setup
+local OriginalSettings = {
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    FogEnd = Lighting.FogEnd,
+    GlobalShadows = Lighting.GlobalShadows,
+    Ambient = Lighting.Ambient
+}
+
+local function enableFullBright()
+    Lighting.Brightness = 2
+    Lighting.ClockTime = 12
+    Lighting.FogEnd = 100000
+    Lighting.GlobalShadows = false
+    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+end
+
+local function resetLighting()
+    for property, value in pairs(OriginalSettings) do
+        Lighting[property] = value
+    end
+end
+
+-- Checkbox Creator
 local function createCheckbox(parent, text, pos)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 150, 0, 30)
@@ -112,36 +164,52 @@ local function createCheckbox(parent, text, pos)
     btn.Parent = parent
 
     local toggled = false
+
     btn.MouseButton1Click:Connect(function()
         toggled = not toggled
         btn.BackgroundColor3 = toggled and Color3.fromRGB(124, 53, 255) or Color3.fromRGB(0, 0, 0)
     end)
 
     btn.MouseEnter:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(124, 53, 255)
-    end)
-    btn.MouseLeave:Connect(function()
-        if not toggled then
-            btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        end
+        btn.BackgroundColor3 = toggled and Color3.fromRGB(124, 53, 255) or Color3.fromRGB(60, 20, 90)
     end)
 
-    return btn
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = toggled and Color3.fromRGB(124, 53, 255) or Color3.fromRGB(0, 0, 0)
+    end)
+
+    return btn, function() return toggled end
 end
 
--- Combat Buttons
+-- Add Checkboxes
 createCheckbox(combatFrame, "Hitbox Expander", UDim2.new(0, 20, 0, 20))
 
--- Visuals Buttons
 createCheckbox(visualsFrame, "Boxes", UDim2.new(0, 20, 0, 20))
 createCheckbox(visualsFrame, "Chams", UDim2.new(0, 20, 0, 60))
 createCheckbox(visualsFrame, "TC ESP", UDim2.new(0, 20, 0, 100))
 createCheckbox(visualsFrame, "Ore ESP", UDim2.new(0, 20, 0, 140))
-createCheckbox(visualsFrame, "Full Bright", UDim2.new(0, 20, 0, 180))
-createCheckbox(visualsFrame, "No Fog", UDim2.new(0, 20, 0, 220))
+local fullBrightCheckbox, isFullBrightEnabled = createCheckbox(visualsFrame, "Full Bright", UDim2.new(0, 20, 0, 180))
+local noFogCheckbox, isNoFogEnabled = createCheckbox(visualsFrame, "No Fog", UDim2.new(0, 20, 0, 220))
 
--- Misc Buttons
-local fovCheckbox = createCheckbox(miscFrame, "FOV", UDim2.new(0, 20, 0, 20))
+fullBrightCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    if isFullBrightEnabled() then
+        enableFullBright()
+    else
+        resetLighting()
+    end
+end)
+
+noFogCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    if isNoFogEnabled() then
+        Lighting.FogEnd = 100000
+    else
+        Lighting.FogEnd = OriginalSettings.FogEnd
+    end
+end)
+
+createCheckbox(miscFrame, "FOV", UDim2.new(0, 20, 0, 20))
 
 -- FOV Slider
 local fovSlider = Instance.new("Frame")
@@ -157,150 +225,43 @@ sliderButton.BackgroundColor3 = Color3.fromRGB(124, 53, 255)
 sliderButton.Text = ""
 sliderButton.Parent = fovSlider
 
-local dragging = false
+local draggingSlider = false
 
 sliderButton.MouseButton1Down:Connect(function()
-    dragging = true
+    draggingSlider = true
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
+userInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+        draggingSlider = false
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+userInputService.InputChanged:Connect(function(input)
+    if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
         local sliderPos = math.clamp((input.Position.X - fovSlider.AbsolutePosition.X) / fovSlider.AbsoluteSize.X, 0, 1)
         sliderButton.Position = UDim2.new(sliderPos, -10, 0, 0)
     end
 end)
 
-createCheckbox(miscFrame, "Hitsound", UDim2.new(0, 20, 0, 100))
+local hitsoundCheckbox, isHitsoundEnabled = createCheckbox(miscFrame, "Hitsound", UDim2.new(0, 20, 0, 100))
+
+hitsoundCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    local headshotSound = soundService:FindFirstChild("PlayerHitHeadshot")
+    if headshotSound then
+        if isHitsoundEnabled() then
+            headshotSound.EqualizerSoundEffect.HighGain = -1.5
+            headshotSound.SoundId = "rbxassetid://8726881116"
+        else
+            headshotSound.EqualizerSoundEffect.HighGain = 0
+            headshotSound.SoundId = "rbxassetid://0"
+        end
+    end
+end)
+
 createCheckbox(miscFrame, "Skin Changer", UDim2.new(0, 20, 0, 140))
 createCheckbox(miscFrame, "Sky Changer", UDim2.new(0, 20, 0, 180))
 
--- ForceField Button
-local forceFieldButton = Instance.new("TextButton")
-forceFieldButton.Size = UDim2.new(0, 150, 0, 40)
-forceFieldButton.Position = UDim2.new(0, 20, 0, 240)
-forceFieldButton.BackgroundColor3 = Color3.fromRGB(120, 60, 180)
-forceFieldButton.TextColor3 = Color3.new(1, 1, 1)
-forceFieldButton.Text = "ForceField: ON"
-forceFieldButton.Font = Enum.Font.SourceSansBold
-forceFieldButton.TextSize = 20
-forceFieldButton.Parent = miscFrame
-
--- Forcefield Logic
-local enabled = true
-local wallNames = {"Wall", "Barrier"}
-local forceMaterial = Enum.Material.ForceField
-local forceColor = Color3.fromRGB(170, 85, 255)
-local originalStates = {}
-
-local function rememberOriginal(part)
-	if not originalStates[part] then
-		originalStates[part] = {
-			Material = part.Material,
-			Color = part.Color,
-		}
-	end
-end
-
-local function restoreOriginals()
-	for part, state in pairs(originalStates) do
-		if part and part:IsA("BasePart") then
-			part.Material = state.Material
-			part.Color = state.Color
-		end
-	end
-end
-
-local function applyStyleToPart(part)
-	if part:IsA("BasePart") then
-		rememberOriginal(part)
-		part.Material = forceMaterial
-		part.Color = forceColor
-	end
-end
-
-local function updateAllWalls()
-	for _, model in ipairs(workspace:GetChildren()) do
-		if model:IsA("Model") then
-			for _, name in ipairs(wallNames) do
-				local part = model:FindFirstChild(name)
-				if part and part:IsA("BasePart") then
-					if enabled then
-						applyStyleToPart(part)
-					else
-						restoreOriginals()
-					end
-				end
-			end
-		end
-	end
-end
-
-workspace.ChildAdded:Connect(function(child)
-	task.wait(0.1)
-	if not enabled then return end
-	if child:IsA("Model") then
-		for _, name in ipairs(wallNames) do
-			local part = child:FindFirstChild(name)
-			if part and part:IsA("BasePart") then
-				applyStyleToPart(part)
-			end
-		end
-	end
-end)
-
-forceFieldButton.MouseButton1Click:Connect(function()
-	enabled = not enabled
-	if enabled then
-		forceFieldButton.Text = "ForceField: ON"
-		forceFieldButton.BackgroundColor3 = Color3.fromRGB(120, 60, 180)
-		updateAllWalls()
-	else
-		forceFieldButton.Text = "ForceField: OFF"
-		forceFieldButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-		restoreOriginals()
-	end
-end)
-
-updateAllWalls()
-
--- Dragging MainFrame
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function update(input)
-	local delta = input.Position - dragStart
-	mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-topBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = mainFrame.Position
-
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
-
-topBar.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
-end)
+-- (ForceField button section could be added next...)
 
