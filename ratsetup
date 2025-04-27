@@ -2,6 +2,7 @@
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local soundService = game:GetService("SoundService")
 
@@ -130,23 +131,71 @@ end
 local OriginalSettings = {
     Brightness = Lighting.Brightness,
     ClockTime = Lighting.ClockTime,
+    FogStart = Lighting.FogStart,
     FogEnd = Lighting.FogEnd,
     GlobalShadows = Lighting.GlobalShadows,
-    Ambient = Lighting.Ambient
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
 }
 
+local FullBrightLoop
+local NoFogLoop
+
 local function enableFullBright()
+    if FullBrightLoop then
+        FullBrightLoop:Disconnect()
+    end
     Lighting.Brightness = 2
     Lighting.ClockTime = 12
     Lighting.FogEnd = 100000
     Lighting.GlobalShadows = false
     Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+
+    FullBrightLoop = runService.RenderStepped:Connect(function()
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 12
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+    end)
 end
 
-local function resetLighting()
+local function disableFullBright()
+    if FullBrightLoop then
+        FullBrightLoop:Disconnect()
+        FullBrightLoop = nil
+    end
     for property, value in pairs(OriginalSettings) do
         Lighting[property] = value
     end
+end
+
+local function enableNoFog()
+    if NoFogLoop then
+        NoFogLoop:Disconnect()
+    end
+    Lighting.FogStart = 1000000
+    Lighting.FogEnd = 1000001
+
+    NoFogLoop = runService.RenderStepped:Connect(function()
+        Lighting.FogStart = 1000000
+        Lighting.FogEnd = 1000001
+        local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+        if atmosphere then
+            atmosphere:Destroy()
+        end
+    end)
+end
+
+local function disableNoFog()
+    if NoFogLoop then
+        NoFogLoop:Disconnect()
+        NoFogLoop = nil
+    end
+    Lighting.FogStart = OriginalSettings.FogStart
+    Lighting.FogEnd = OriginalSettings.FogEnd
 end
 
 -- Checkbox Creator
@@ -196,16 +245,16 @@ fullBrightCheckbox.MouseButton1Click:Connect(function()
     if isFullBrightEnabled() then
         enableFullBright()
     else
-        resetLighting()
+        disableFullBright()
     end
 end)
 
 noFogCheckbox.MouseButton1Click:Connect(function()
     task.wait()
     if isNoFogEnabled() then
-        Lighting.FogEnd = 100000
+        enableNoFog()
     else
-        Lighting.FogEnd = OriginalSettings.FogEnd
+        disableNoFog()
     end
 end)
 
@@ -264,4 +313,3 @@ createCheckbox(miscFrame, "Skin Changer", UDim2.new(0, 20, 0, 140))
 createCheckbox(miscFrame, "Sky Changer", UDim2.new(0, 20, 0, 180))
 
 -- (ForceField button section could be added next...)
-
