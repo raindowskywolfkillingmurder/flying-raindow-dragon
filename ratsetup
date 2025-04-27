@@ -3,8 +3,9 @@ local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local userInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
 local soundService = game:GetService("SoundService")
+local camera = workspace.CurrentCamera
+local runService = game:GetService("RunService")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -54,7 +55,6 @@ topBar.InputBegan:Connect(function(input)
         dragging = true
         mousePos = input.Position
         framePos = mainFrame.Position
-
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -192,9 +192,26 @@ createCheckbox(visualsFrame, "Ore ESP", UDim2.new(0, 20, 0, 140))
 local fullBrightCheckbox, isFullBrightEnabled = createCheckbox(visualsFrame, "Full Bright", UDim2.new(0, 20, 0, 180))
 local noFogCheckbox, isNoFogEnabled = createCheckbox(visualsFrame, "No Fog", UDim2.new(0, 20, 0, 220))
 
-createCheckbox(miscFrame, "FOV", UDim2.new(0, 20, 0, 20))
+fullBrightCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    if isFullBrightEnabled() then
+        enableFullBright()
+    else
+        resetLighting()
+    end
+end)
 
--- FOV Slider
+noFogCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    if isNoFogEnabled() then
+        Lighting.FogEnd = 100000
+    else
+        Lighting.FogEnd = OriginalSettings.FogEnd
+    end
+end)
+
+-- FOV Section
+local fovCheckbox, isFovEnabled = createCheckbox(miscFrame, "FOV", UDim2.new(0, 20, 0, 20))
 local fovSlider = Instance.new("Frame")
 fovSlider.Size = UDim2.new(0, 200, 0, 20)
 fovSlider.Position = UDim2.new(0, 20, 0, 60)
@@ -209,6 +226,9 @@ sliderButton.Text = ""
 sliderButton.Parent = fovSlider
 
 local draggingSlider = false
+local defaultFov = 70
+local currentFov = 70
+local fovConnection
 
 sliderButton.MouseButton1Down:Connect(function()
     draggingSlider = true
@@ -224,9 +244,37 @@ userInputService.InputChanged:Connect(function(input)
     if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
         local sliderPos = math.clamp((input.Position.X - fovSlider.AbsolutePosition.X) / fovSlider.AbsoluteSize.X, 0, 1)
         sliderButton.Position = UDim2.new(sliderPos, -10, 0, 0)
+        currentFov = 70 + (sliderPos * 100)
+        if isFovEnabled() then
+            camera.FieldOfView = currentFov
+        end
     end
 end)
 
+local function enableFovForce()
+    fovConnection = runService.RenderStepped:Connect(function()
+        camera.FieldOfView = currentFov
+    end)
+end
+
+local function disableFovForce()
+    if fovConnection then
+        fovConnection:Disconnect()
+        fovConnection = nil
+    end
+    camera.FieldOfView = defaultFov
+end
+
+fovCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    if isFovEnabled() then
+        enableFovForce()
+    else
+        disableFovForce()
+    end
+end)
+
+-- Hitsound
 local hitsoundCheckbox, isHitsoundEnabled = createCheckbox(miscFrame, "Hitsound", UDim2.new(0, 20, 0, 100))
 
 hitsoundCheckbox.MouseButton1Click:Connect(function()
@@ -243,6 +291,7 @@ hitsoundCheckbox.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Skin changer (future feature maybe)
 createCheckbox(miscFrame, "Skin Changer", UDim2.new(0, 20, 0, 140))
 
 -- Sky Changer
@@ -265,9 +314,6 @@ skyChangerCheckbox.MouseButton1Click:Connect(function()
     task.wait()
     if isSkyChangerEnabled() then
         if not customSky then
-            if originalSky then
-                originalSky.Parent = nil
-            end
             customSky = Instance.new("Sky")
             customSky.Name = "CustomSky"
             customSky.Parent = Lighting
@@ -283,15 +329,5 @@ skyChangerCheckbox.MouseButton1Click:Connect(function()
         if originalSky then
             originalSky.Parent = Lighting
         end
-    end
-end)
-
--- 🔥 FORCE LIGHTING CONSTANTLY 🔥
-RunService.RenderStepped:Connect(function()
-    if isFullBrightEnabled and isFullBrightEnabled() then
-        enableFullBright()
-    end
-    if isNoFogEnabled and isNoFogEnabled() then
-        Lighting.FogEnd = 100000
     end
 end)
