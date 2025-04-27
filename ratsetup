@@ -2,8 +2,8 @@
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local userInputService = game:GetService("UserInputService")
-local runService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 local soundService = game:GetService("SoundService")
 
 -- Create ScreenGui
@@ -131,71 +131,23 @@ end
 local OriginalSettings = {
     Brightness = Lighting.Brightness,
     ClockTime = Lighting.ClockTime,
-    FogStart = Lighting.FogStart,
     FogEnd = Lighting.FogEnd,
     GlobalShadows = Lighting.GlobalShadows,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
+    Ambient = Lighting.Ambient
 }
 
-local FullBrightLoop
-local NoFogLoop
-
 local function enableFullBright()
-    if FullBrightLoop then
-        FullBrightLoop:Disconnect()
-    end
     Lighting.Brightness = 2
     Lighting.ClockTime = 12
     Lighting.FogEnd = 100000
     Lighting.GlobalShadows = false
     Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-
-    FullBrightLoop = runService.RenderStepped:Connect(function()
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 12
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = false
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    end)
 end
 
-local function disableFullBright()
-    if FullBrightLoop then
-        FullBrightLoop:Disconnect()
-        FullBrightLoop = nil
-    end
+local function resetLighting()
     for property, value in pairs(OriginalSettings) do
         Lighting[property] = value
     end
-end
-
-local function enableNoFog()
-    if NoFogLoop then
-        NoFogLoop:Disconnect()
-    end
-    Lighting.FogStart = 1000000
-    Lighting.FogEnd = 1000001
-
-    NoFogLoop = runService.RenderStepped:Connect(function()
-        Lighting.FogStart = 1000000
-        Lighting.FogEnd = 1000001
-        local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-        if atmosphere then
-            atmosphere:Destroy()
-        end
-    end)
-end
-
-local function disableNoFog()
-    if NoFogLoop then
-        NoFogLoop:Disconnect()
-        NoFogLoop = nil
-    end
-    Lighting.FogStart = OriginalSettings.FogStart
-    Lighting.FogEnd = OriginalSettings.FogEnd
 end
 
 -- Checkbox Creator
@@ -239,24 +191,6 @@ createCheckbox(visualsFrame, "TC ESP", UDim2.new(0, 20, 0, 100))
 createCheckbox(visualsFrame, "Ore ESP", UDim2.new(0, 20, 0, 140))
 local fullBrightCheckbox, isFullBrightEnabled = createCheckbox(visualsFrame, "Full Bright", UDim2.new(0, 20, 0, 180))
 local noFogCheckbox, isNoFogEnabled = createCheckbox(visualsFrame, "No Fog", UDim2.new(0, 20, 0, 220))
-
-fullBrightCheckbox.MouseButton1Click:Connect(function()
-    task.wait()
-    if isFullBrightEnabled() then
-        enableFullBright()
-    else
-        disableFullBright()
-    end
-end)
-
-noFogCheckbox.MouseButton1Click:Connect(function()
-    task.wait()
-    if isNoFogEnabled() then
-        enableNoFog()
-    else
-        disableNoFog()
-    end
-end)
 
 createCheckbox(miscFrame, "FOV", UDim2.new(0, 20, 0, 20))
 
@@ -310,6 +244,54 @@ hitsoundCheckbox.MouseButton1Click:Connect(function()
 end)
 
 createCheckbox(miscFrame, "Skin Changer", UDim2.new(0, 20, 0, 140))
-createCheckbox(miscFrame, "Sky Changer", UDim2.new(0, 20, 0, 180))
 
--- (ForceField button section could be added next...)
+-- Sky Changer
+local skyChangerCheckbox, isSkyChangerEnabled = createCheckbox(miscFrame, "Sky Changer", UDim2.new(0, 20, 0, 180))
+local customSky = nil
+local originalSky = Lighting:FindFirstChildOfClass("Sky")
+
+local skyboxes = {
+    Spongebob = {
+        SkyboxBk = "rbxassetid://277099484",
+        SkyboxDn = "rbxassetid://277099500",
+        SkyboxFt = "rbxassetid://277099554",
+        SkyboxLf = "rbxassetid://277099531",
+        SkyboxRt = "rbxassetid://277099589",
+        SkyboxUp = "rbxassetid://277101591"
+    }
+}
+
+skyChangerCheckbox.MouseButton1Click:Connect(function()
+    task.wait()
+    if isSkyChangerEnabled() then
+        if not customSky then
+            if originalSky then
+                originalSky.Parent = nil
+            end
+            customSky = Instance.new("Sky")
+            customSky.Name = "CustomSky"
+            customSky.Parent = Lighting
+            for face, id in pairs(skyboxes.Spongebob) do
+                customSky[face] = id
+            end
+        end
+    else
+        if customSky then
+            customSky:Destroy()
+            customSky = nil
+        end
+        if originalSky then
+            originalSky.Parent = Lighting
+        end
+    end
+end)
+
+-- 🔥 FORCE LIGHTING CONSTANTLY 🔥
+RunService.RenderStepped:Connect(function()
+    if isFullBrightEnabled and isFullBrightEnabled() then
+        enableFullBright()
+    end
+    if isNoFogEnabled and isNoFogEnabled() then
+        Lighting.FogEnd = 100000
+    end
+end)
